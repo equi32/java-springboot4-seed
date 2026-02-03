@@ -1,0 +1,38 @@
+spring:
+  application:
+    name: seed
+  profiles:
+    active: local
+  flyway:
+    enabled: true
+    baselineOnMigrate: false
+
+version:
+  seed: 1.1.0
+  app: 0.0.1-SNAPSHOT
+
+documentation:
+  openapi:
+    info:
+      prefix: ${API_PREFIX:MS-SEED}
+      title: Ms Seed API
+      description: API Documentation
+      version: 0.0.1-SNAPSHOT
+      contact:
+        name: Direccion de Sistemas - PJT
+    healthcheck:
+      path: /health/liveness
+      tag: Health Check
+      summary: Liveness check
+      description: Liveness check for the application
+
+management:
+  endpoint:
+    health:
+      group:
+        readiness:
+          include:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
