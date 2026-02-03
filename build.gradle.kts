@@ -53,11 +53,11 @@ dependencies {
 	// Kafka - Spring Boot 4 uses Kafka 4.0
 	//implementation("org.springframework.kafka:spring-kafka")
 
-	// Elasticsearch - Using elasticsearch-java client directly
+	// OpenSearch - Using opensearch-java client directly
 	// We don't use spring-boot-starter-elasticsearch to avoid Jackson 2/3 conflicts in Spring Boot 4
-	// We provide custom ElasticsearchClient bean with authentication
-	implementation("co.elastic.clients:elasticsearch-java:9.1.0")
-	implementation("org.elasticsearch.client:elasticsearch-rest-client:9.1.0")
+	// We provide custom OpenSearchClient bean with authentication
+	implementation("org.opensearch.client:opensearch-java:2.19.0")
+	implementation("org.opensearch.client:opensearch-rest-client:2.19.0")
 
 	// Lombok
 	compileOnly("org.projectlombok:lombok")
@@ -103,11 +103,8 @@ jacoco {
 	toolVersion = "0.8.12"
 }
 
-// Skip tests temporarily to verify build compiles
-tasks.test {
-	// Temporarily disable tests for build verification
-	enabled = false
-}
+// Tests are now enabled with Spring Boot 4 integration test infrastructure
+// Tests use Karate + Testcontainers for end-to-end API testing
 
 // Configure test task to generate JaCoCo reports
 tasks.withType<Test> {
