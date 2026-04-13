@@ -2,7 +2,6 @@ package gov.justucuman.seed.integration;
 
 import gov.justucuman.seed.SeedApplication;
 import gov.justucuman.seed.integration.components.ArgumentAwareComponent;
-import gov.justucuman.seed.integration.components.MockServerComponent;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -13,6 +12,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.TestInstance;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.utility.DockerImageName;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -25,12 +26,9 @@ import java.util.stream.Collectors;
  * This class sets up the Spring Boot application context with Testcontainers
  * and executes Karate feature files for end-to-end API testing.
  * <p>
- * <b>Spring Boot 4 Enhancements:</b>
- * <ul>
- *   <li>Can leverage {@code @ServiceConnection} for automatic container configuration</li>
- *   <li>Compatible with {@code @ImportTestcontainers} for declarative container management</li>
- *   <li>Supports Java 25 records and pattern matching</li>
- * </ul>
+ * <b>Important:</b> Karate tests cannot directly use Spring Boot's {@code @ServiceConnection}
+ * because Karate runs in a separate JUnit lifecycle. Therefore, this class manually
+ * manages the PostgreSQL container and passes connection details to Spring Boot.
  * <p>
  * <b>Usage:</b>
  * <pre>{@code
@@ -39,23 +37,6 @@ import java.util.stream.Collectors;
  *     @Override
  *     public String getFeatureDirectory() {
  *         return "products";  // Loads classpath:integration/features/products/*.feature
- *     }
- * }
- * }</pre>
- * <p>
- * <b>Alternative Spring Boot 4 approach:</b>
- * For simpler tests, you can use Spring Boot 4's native testcontainers support:
- * <pre>{@code
- * @SpringBootTest
- * @Import(TestContainersConfiguration.class)
- * class MyIntegrationTest {
- *
- *     @Autowired
- *     private MockServerClient mockServerClient;
- *
- *     @Test
- *     void testWithKarate() {
- *         Karate.run("classpath:integration/features/my-test.feature");
  *     }
  * }
  * }</pre>
@@ -90,12 +71,26 @@ public abstract class IntegrationTestRunner {
 	private final List<ArgumentAwareComponent> components = new ArrayList<>();
 
 	/**
+	 * PostgreSQL container for integration tests.
+	 * <p>
+	 * Manually managed since Karate runs outside Spring's test context.
+	 */
+	private final PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>(
+			DockerImageName.parse("postgres:16-alpine")
+	)
+			.withDatabaseName("seed_db")
+			.withUsername("dev_user")
+			.withPassword("dev_password");
+
+	/**
 	 * Initializes the Spring Boot application context with test configuration.
 	 * <p>
 	 * This method:
 	 * <ol>
+	 *   <li>Starts the PostgreSQL container</li>
 	 *   <li>Starts all registered {@link ArgumentAwareComponent} instances</li>
 	 *   <li>Collects custom Spring Boot arguments from components</li>
+	 *   <li>Configures datasource properties from the running container</li>
 	 *   <li>Starts the application with test profile and custom arguments</li>
 	 * </ol>
 	 *
@@ -105,6 +100,10 @@ public abstract class IntegrationTestRunner {
 	@BeforeAll
 	protected void initContext() throws IOException, InterruptedException {
 		log.info("Starting integration test context");
+
+		// Start PostgreSQL container
+		log.info("Starting PostgreSQL container");
+		postgresContainer.start();
 
 		// Start all registered components
 		components.forEach(ArgumentAwareComponent::start);
@@ -116,8 +115,21 @@ public abstract class IntegrationTestRunner {
 
 		// Add standard test configuration
 		arguments.add("--server.port=" + serverPort);
-		arguments.add("--spring.sql.init.mode=always");
+		// Use Hibernate to create schema for tests (simpler than Flyway for integration tests)
+		arguments.add("--spring.jpa.hibernate.ddl-auto=create-drop");
+		arguments.add("--spring.flyway.enabled=false");
 		arguments.add("--spring.profiles.active=test");
+
+		// Configure datasource from the running PostgreSQL container
+		arguments.add("--spring.datasource.url=" + postgresContainer.getJdbcUrl());
+		arguments.add("--spring.datasource.username=" + postgresContainer.getUsername());
+		arguments.add("--spring.datasource.password=" + postgresContainer.getPassword());
+		arguments.add("--spring.datasource.driver-class-name=org.postgresql.Driver");
+
+		// Disable elasticsearch for integration tests (not needed for basic CRUD tests)
+		arguments.add("--elasticsearch.enabled=false");
+		// Disable kafka for integration tests (not needed for basic CRUD tests)
+		arguments.add("--kafka.enabled=false");
 
 		log.info("Starting application with arguments: {}", arguments);
 
@@ -128,17 +140,19 @@ public abstract class IntegrationTestRunner {
 	/**
 	 * Executes the Karate feature tests.
 	 * <p>
-	 * Features are loaded from {@code classpath:integration/features/{getFeatureDirectory()}/*.feature}
+	 * Features are loaded from {@code classpath:integration/features/{getFeatureDirectory()}.feature}
 	 *
-	 * @return Karate test runner configured for the feature directory
+	 * @return Karate test runner configured for the feature file
 	 */
 	@Karate.Test
 	Karate runFeatureTest() {
-		return Karate.run(basePath + "/" + getFeatureDirectory());
+		return Karate.run(basePath + "/" + getFeatureDirectory() + ".feature")
+				.karateEnv("test")
+				.systemProperty("baseUrl", "http://localhost:" + serverPort);
 	}
 
 	/**
-	 * Shuts down the Spring application context and stops all components.
+	 * Shuts down the Spring application context, stops all components, and stops the PostgreSQL container.
 	 */
 	@AfterAll
 	protected void closeContext() {
@@ -147,6 +161,9 @@ public abstract class IntegrationTestRunner {
 			context.close();
 		}
 		components.forEach(ArgumentAwareComponent::stop);
+		if (postgresContainer != null && postgresContainer.isRunning()) {
+			postgresContainer.stop();
+		}
 	}
 
 	/**
@@ -161,11 +178,11 @@ public abstract class IntegrationTestRunner {
 	}
 
 	/**
-	 * Returns the feature directory for this test class.
+	 * Returns the feature file name for this test class (without the .feature extension).
 	 * <p>
-	 * Feature files should be located in {@code src/test/resources/integration/features/{directory}/}
+	 * Feature files should be located in {@code src/test/resources/integration/features/}
 	 *
-	 * @return the feature directory name (e.g., {@code "products"})
+	 * @return the feature file name without extension (e.g., {@code "products"})
 	 */
 	public abstract String getFeatureDirectory();
 

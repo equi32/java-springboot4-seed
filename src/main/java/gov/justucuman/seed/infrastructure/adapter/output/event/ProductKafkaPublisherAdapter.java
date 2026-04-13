@@ -5,6 +5,7 @@ import gov.justucuman.seed.domain.port.out.ProductEventPublisherPort;
 import gov.justucuman.seed.infrastructure.adapter.output.event.dto.ProductEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
@@ -13,6 +14,7 @@ import java.time.LocalDateTime;
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@ConditionalOnProperty(name = "kafka.enabled", havingValue = "true", matchIfMissing = true)
 public class ProductKafkaPublisherAdapter implements ProductEventPublisherPort {
 
     private final KafkaTemplate<String, Object> kafkaTemplate;

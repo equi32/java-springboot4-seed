@@ -48,7 +48,7 @@ public class ProductEntity {
     @CreationTimestamp
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at", nullable = false, insertable = false)
+    @Column(name = "updated_at", nullable = false)
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 

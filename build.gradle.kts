@@ -75,8 +75,8 @@ dependencies {
 	testImplementation("org.springframework.boot:spring-boot-testcontainers")
 
 	// Karate for integration testing
-	testImplementation("com.intuit.karate:karate-core:1.4.1")
-	testImplementation("com.intuit.karate:karate-junit5:1.4.1")
+	testImplementation("io.karatelabs:karate-core:1.5.0")
+	testImplementation("io.karatelabs:karate-junit5:1.5.0")
 	testImplementation("net.masterthought:cucumber-reporting:5.8.4")
 	testImplementation("org.apache.commons:commons-lang3:3.17.0")
 
@@ -100,7 +100,7 @@ flyway {
 
 // JaCoCo configuration for code coverage
 jacoco {
-	toolVersion = "0.8.12"
+	toolVersion = "0.8.14"
 }
 
 // Tests are now enabled with Spring Boot 4 integration test infrastructure

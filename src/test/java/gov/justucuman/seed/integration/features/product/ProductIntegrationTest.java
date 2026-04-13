@@ -1,4 +1,6 @@
-package gov.justucuman.seed.integration;
+package gov.justucuman.seed.integration.features.product;
+
+import gov.justucuman.seed.integration.IntegrationTestRunner;
 
 /**
  * Integration test for Product API using Karate.

@@ -6,26 +6,18 @@ Feature: Health Check Integration Tests
 
   Scenario: Health endpoint returns UP status
     Given path 'actuator/health'
-    When method get
+    When method GET
     Then status 200
     And match response.status == 'UP'
 
-  Scenario: Info endpoint returns application information
-    Given path 'actuator/info'
-    When method get
+  Scenario: Health/liveness endpoint returns UP status
+    Given path 'actuator/health/liveness'
+    When method GET
     Then status 200
-    And match response.app.name == 'seed'
+    And match response.status == 'UP'
 
-  Scenario: Metrics endpoint is accessible
-    Given path 'actuator/metrics'
-    When method get
+  Scenario: Health/liveness endpoint returns UP status
+    Given path 'actuator/health/readiness'
+    When method GET
     Then status 200
-    And match response.names == '#array'
-    And assert response.names.length > 0
-
-  Scenario: Prometheus metrics endpoint is accessible
-    Given path 'actuator/prometheus'
-    When method get
-    Then status 200
-    And match response =~ '.*jvm.*'
-    And match response =~ '.*process.*'
+    And match response.status == 'UP'

@@ -1,4 +1,6 @@
-package gov.justucuman.seed.integration;
+package gov.justucuman.seed.integration.features.health;
+
+import gov.justucuman.seed.integration.IntegrationTestRunner;
 
 /**
  * Integration test for health check endpoints using Karate.
