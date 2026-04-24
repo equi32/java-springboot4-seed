@@ -31,8 +31,4 @@ management:
     health:
       group:
         readiness:
-          include:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,metrics,prometheus
+          include: readinessState,diskSpace,db

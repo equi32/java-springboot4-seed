@@ -1,17 +1,28 @@
 spring:
+  # Flyway is enabled by default when using @ServiceConnection with PostgreSQL
   flyway:
-    enabled: false
-  datasource:
-    url: jdbc:h2:mem:testdb
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
+    enabled: true
+    baseline-on-migrate: false
+  # Datasource is automatically configured by @ServiceConnection annotation
+  # on the PostgreSQLContainer in TestContainers interface
   jpa:
     hibernate:
-      ddl-auto: create-drop
-    show-sql: false
+      ddl-auto: none  # Flyway manages schema, not Hibernate
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+    open-in-view: false
+  sql:
+    init:
+      mode: never  # Flyway handles schema migration
+  # Kafka configuration for integration tests
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     consumer:
       group-id: api-seed-consumer-group-test
       auto-offset-reset: earliest
@@ -25,18 +36,28 @@ spring:
     topics:
       product-events: product-events-test
 
-elasticsearch:
-  host: localhost
-  port: 9200
+# OpenSearch configuration for integration tests
+opensearch:
+  host: ${OPENSEARCH_HOST:localhost}
+  port: ${OPENSEARCH_PORT:9200}
   scheme: http
-  username: elastic
-  password: changeme
+  username: ${OPENSEARCH_USERNAME:elastic}
+  password: ${OPENSEARCH_PASSWORD:changeme}
   index:
     products: products-test
 
+# External API configuration
+# Override via --external.api.product.base-url in tests using MockServerComponent
 external:
   api:
     product:
-      base-url: https://fakestoreapi.com
+      base-url: ${EXTERNAL_API_BASE_URL:https://fakestoreapi.com}
       timeout: 5000
       retry-attempts: 3
+
+# Logging configuration for tests
+logging:
+  level:
+    gov.justucuman.seed: DEBUG
+    org.testcontainers: INFO
+    org.mockserver: DEBUG
