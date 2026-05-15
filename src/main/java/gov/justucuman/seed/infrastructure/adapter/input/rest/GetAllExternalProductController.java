@@ -17,7 +17,7 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/products/external")
+@RequestMapping("/api/{version}/products/external")
 @Tag(name = "External Products", description = "External Product gets API")
 @RequiredArgsConstructor
 public class GetAllExternalProductController {
@@ -25,7 +25,7 @@ public class GetAllExternalProductController {
     private final GetAllExternalProduct getAllExternalProduct;
 
     @Operation(summary = "Get all External Products")
-    @GetMapping
+    @GetMapping(version = "1")
     public ResponseEntity<List<ProductResponse>> perform() {
         log.info("GET /api/v1/products/external");
         List<Product> products = getAllExternalProduct.perform();

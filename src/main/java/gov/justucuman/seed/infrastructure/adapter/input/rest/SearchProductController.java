@@ -17,7 +17,7 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/products")
+@RequestMapping("/api/{version}/products")
 @Tag(name = "Products", description = "Product getAll API")
 @RequiredArgsConstructor
 public class SearchProductController {
@@ -25,7 +25,7 @@ public class SearchProductController {
     private final SearchProduct searchProduct;
 
     @Operation(summary = "Search products")
-    @GetMapping("/search")
+    @GetMapping(value = "/search", version = "1")
     public ResponseEntity<List<ProductResponse>> perform(@RequestParam String term, @RequestParam String value) {
         log.info("GET /api/v1/products/search with term {}={}", term, value);
         List<ProductResponse> response = GetProductMapper.INSTANCE.toResponse(searchProduct.perform(term, value));

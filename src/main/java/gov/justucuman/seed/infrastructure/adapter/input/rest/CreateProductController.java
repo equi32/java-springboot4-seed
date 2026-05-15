@@ -20,7 +20,7 @@ import java.net.URI;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/products")
+@RequestMapping("/api/{version}/products")
 @Tag(name = "Products", description = "Product create API")
 @RequiredArgsConstructor
 public class CreateProductController {
@@ -28,7 +28,7 @@ public class CreateProductController {
     private final CreateProduct createProduct;
 
     @Operation(summary = "Creates a new product")
-    @PostMapping
+    @PostMapping(version = "1")
     public ResponseEntity<ProductResponse> perform(@Valid @RequestBody CreateProductRequest request) {
         log.info("POST /api/v1/products with request {}", request);
         Product createdProduct = createProduct.perform(CreateProductMapper.INSTANCE.toDomain(request));
