@@ -91,6 +91,9 @@ dependencies {
 	testImplementation("io.projectreactor:reactor-test")
 	testImplementation("org.springframework.boot:spring-boot-testcontainers")
 
+	// ArchUnit - hexagonal architecture rule enforcement (fails the build on layer violations)
+	testImplementation("com.tngtech.archunit:archunit-junit5:1.4.2")
+
 	// Karate for integration testing
 	testImplementation("io.karatelabs:karate-core:1.5.0")
 	testImplementation("io.karatelabs:karate-junit5:1.5.0")

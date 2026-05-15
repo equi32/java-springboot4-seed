@@ -243,6 +243,20 @@ A flat target across the whole codebase (e.g. uniform 80%) is a common anti-patt
 
 > **Note.** Coverage is a proxy for test quality, not the goal itself. If you want a stronger signal on the domain and application layers, add **mutation testing** (e.g. [PIT](https://pitest.org/)) — it measures whether tests actually detect injected faults, which line coverage can't tell you. The differentiated thresholds above are what mature teams using Hexagonal/Clean Architecture tend to converge on in practice.
 
+## Architecture Rules (ArchUnit)
+
+The hexagonal layering is enforced at build time by **ArchUnit** (`HexagonalArchitectureTest`). Violations fail `./gradlew check`, so a bad import is caught the same way a failing test or coverage gap is.
+
+| Rule | What it enforces |
+|---|---|
+| `domain_should_be_framework_agnostic` | Classes under `domain/**` must not import Spring, JPA/Hibernate, Kafka, OpenSearch, MapStruct, Jackson, Reactor, springdoc, etc. The hexagon's core stays pure Java. |
+| `domain_should_not_depend_on_application_or_infrastructure` | Dependencies flow inward only: `infrastructure → application → domain`. Domain never reaches outward. |
+| `application_should_not_depend_on_infrastructure` | Use cases must not know about adapters — they depend on ports declared in the domain. |
+| `port_in_should_be_implemented_only_in_application` | Implementations of `domain/port/in/*` interfaces (use cases) must live under `application/**`. |
+| `port_out_should_be_implemented_only_in_infrastructure_output` | Implementations of `domain/port/out/*` interfaces (adapters) must live under `infrastructure/adapter/output/**`. |
+
+When a rule fails, the test report at `build/reports/tests/test/.../HexagonalArchitectureTest/<rule-name>.html` lists the exact offending classes and dependencies.
+
 ## Code Style
 
 Enforced via **Checkstyle 10.21.2** with Google Java Style:
