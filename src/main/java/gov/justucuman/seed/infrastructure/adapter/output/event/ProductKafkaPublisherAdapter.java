@@ -3,13 +3,12 @@ package gov.justucuman.seed.infrastructure.adapter.output.event;
 import gov.justucuman.seed.domain.model.Product;
 import gov.justucuman.seed.domain.port.out.ProductEventPublisherPort;
 import gov.justucuman.seed.infrastructure.adapter.output.event.dto.ProductEvent;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
-
-import java.time.LocalDateTime;
 
 @Slf4j
 @Component
@@ -34,7 +33,6 @@ public class ProductKafkaPublisherAdapter implements ProductEventPublisherPort {
                 product.price(),
                 product.stock(),
                 product.status() != null ? product.status().name() : null,
-                LocalDateTime.now()
-        );
+                LocalDateTime.now());
     }
 }

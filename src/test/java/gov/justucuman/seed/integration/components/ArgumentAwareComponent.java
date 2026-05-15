@@ -39,30 +39,29 @@ import java.util.List;
  */
 public interface ArgumentAwareComponent {
 
-	/**
-	 * Returns a list of Spring Boot arguments to be passed to the application context.
-	 * <p>
-	 * These arguments are typically used to configure external service URLs,
-	 * mock endpoints, or other test-specific properties.
-	 *
-	 * @return list of Spring Boot arguments (e.g., {@code --property=value})
-	 */
-	List<String> argumentList();
+    /**
+     * Returns a list of Spring Boot arguments to be passed to the application context.
+     * <p>
+     * These arguments are typically used to configure external service URLs,
+     * mock endpoints, or other test-specific properties.
+     *
+     * @return list of Spring Boot arguments (e.g., {@code --property=value})
+     */
+    List<String> argumentList();
 
-	/**
-	 * Starts the component before the application context is initialized.
-	 * <p>
-	 * This method is called in the {@code @BeforeAll} phase of the test lifecycle.
-	 * Components should ensure all required resources are available before returning.
-	 */
-	void start();
+    /**
+     * Starts the component before the application context is initialized.
+     * <p>
+     * This method is called in the {@code @BeforeAll} phase of the test lifecycle.
+     * Components should ensure all required resources are available before returning.
+     */
+    void start();
 
-	/**
-	 * Stops the component after all tests have completed.
-	 * <p>
-	 * This method is called in the {@code @AfterAll} phase of the test lifecycle.
-	 * Components should release all resources (close connections, stop containers, etc.).
-	 */
-	void stop();
-
+    /**
+     * Stops the component after all tests have completed.
+     * <p>
+     * This method is called in the {@code @AfterAll} phase of the test lifecycle.
+     * Components should release all resources (close connections, stop containers, etc.).
+     */
+    void stop();
 }

@@ -5,6 +5,7 @@ import gov.justucuman.seed.common.constant.ProblemType;
 import gov.justucuman.seed.common.error.Error;
 import gov.justucuman.seed.common.error.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -18,27 +19,23 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
-import java.util.List;
-
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(NoResourceFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    public ResponseEntity<ErrorResponse> handle(
-            NoResourceFoundException ex, HttpServletRequest request) {
+    public ResponseEntity<ErrorResponse> handle(NoResourceFoundException ex, HttpServletRequest request) {
         // Static-resource 404s (e.g. browser probes for swagger-ui *.css.map,
         // /.well-known/appspecific/com.chrome.devtools.json) must not log a
         // full stack trace via the catch-all Exception handler.
-        ErrorResponse body = new ErrorResponse(
-                new Error(
-                        ProblemType.HTTP_METHOD_NOT_FOUND.getType(),
-                        ProblemType.HTTP_METHOD_NOT_FOUND.getCode(),
-                        ProblemType.HTTP_METHOD_NOT_FOUND.getStatus().value(),
-                        ProblemType.HTTP_METHOD_NOT_FOUND.getTitle(),
-                        ex.getMessage(),
-                        request.getMethod().concat(" ").concat(request.getRequestURI()),
-                        List.of()));
+        ErrorResponse body = new ErrorResponse(new Error(
+                ProblemType.HTTP_METHOD_NOT_FOUND.getType(),
+                ProblemType.HTTP_METHOD_NOT_FOUND.getCode(),
+                ProblemType.HTTP_METHOD_NOT_FOUND.getStatus().value(),
+                ProblemType.HTTP_METHOD_NOT_FOUND.getTitle(),
+                ex.getMessage(),
+                request.getMethod().concat(" ").concat(request.getRequestURI()),
+                List.of()));
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(body);
@@ -46,10 +43,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(NoHandlerFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    public ResponseEntity<ErrorResponse> handle(
-            NoHandlerFoundException ex, HttpServletRequest request) {
-        return new ErrorResponse(
-                new Error(
+    public ResponseEntity<ErrorResponse> handle(NoHandlerFoundException ex, HttpServletRequest request) {
+        return new ErrorResponse(new Error(
                         ProblemType.HTTP_METHOD_NOT_FOUND.getType(),
                         ProblemType.HTTP_METHOD_NOT_FOUND.getCode(),
                         ProblemType.HTTP_METHOD_NOT_FOUND.getStatus().value(),
@@ -62,10 +57,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     @ResponseStatus(HttpStatus.METHOD_NOT_ALLOWED)
-    public ResponseEntity<ErrorResponse> handle(
-            HttpRequestMethodNotSupportedException ex, HttpServletRequest request) {
-        return new ErrorResponse(
-                new Error(
+    public ResponseEntity<ErrorResponse> handle(HttpRequestMethodNotSupportedException ex, HttpServletRequest request) {
+        return new ErrorResponse(new Error(
                         ProblemType.HTTP_METHOD_NOT_SUPPORTED.getType(),
                         ProblemType.HTTP_METHOD_NOT_SUPPORTED.getCode(),
                         ProblemType.HTTP_METHOD_NOT_SUPPORTED.getStatus().value(),
@@ -78,10 +71,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public ResponseEntity<ErrorResponse> handle(
-            Exception ex, HttpServletRequest request) {
-        return new ErrorResponse(
-                new Error(
+    public ResponseEntity<ErrorResponse> handle(Exception ex, HttpServletRequest request) {
+        return new ErrorResponse(new Error(
                         ProblemType.INTERNAL_SERVER_ERROR.getType(),
                         ProblemType.INTERNAL_SERVER_ERROR.getCode(),
                         ProblemType.INTERNAL_SERVER_ERROR.getStatus().value(),
@@ -94,10 +85,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ResponseEntity<ErrorResponse> handle(
-            HttpMessageNotReadableException ex, HttpServletRequest request) {
-        return new ErrorResponse(
-                new Error(
+    public ResponseEntity<ErrorResponse> handle(HttpMessageNotReadableException ex, HttpServletRequest request) {
+        return new ErrorResponse(new Error(
                         ProblemType.HTTP_MESSAGE_NOT_READABLE.getType(),
                         ProblemType.HTTP_MESSAGE_NOT_READABLE.getCode(),
                         ProblemType.HTTP_MESSAGE_NOT_READABLE.getStatus().value(),
@@ -110,10 +99,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
     @ResponseStatus(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
-    public ResponseEntity<ErrorResponse> handle(
-            HttpMediaTypeNotSupportedException ex, HttpServletRequest request) {
-        return new ErrorResponse(
-                new Error(
+    public ResponseEntity<ErrorResponse> handle(HttpMediaTypeNotSupportedException ex, HttpServletRequest request) {
+        return new ErrorResponse(new Error(
                         ProblemType.HTTP_MEDIA_TYPE_NOT_SUPPORTED.getType(),
                         ProblemType.HTTP_MEDIA_TYPE_NOT_SUPPORTED.getCode(),
                         ProblemType.HTTP_MEDIA_TYPE_NOT_SUPPORTED.getStatus().value(),
@@ -126,10 +113,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ResponseEntity<ErrorResponse> handle(
-            MethodArgumentNotValidException ex, HttpServletRequest request) {
-        return new ErrorResponse(
-                new Error(
+    public ResponseEntity<ErrorResponse> handle(MethodArgumentNotValidException ex, HttpServletRequest request) {
+        return new ErrorResponse(new Error(
                         ProblemType.ARGUMENT_NOT_VALID.getType(),
                         ProblemType.ARGUMENT_NOT_VALID.getCode(),
                         ProblemType.ARGUMENT_NOT_VALID.getStatus().value(),
@@ -142,10 +127,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ProductNotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    public ResponseEntity<ErrorResponse> handle(
-            ProductNotFoundException ex, HttpServletRequest request) {
-        return new ErrorResponse(
-                new Error(
+    public ResponseEntity<ErrorResponse> handle(ProductNotFoundException ex, HttpServletRequest request) {
+        return new ErrorResponse(new Error(
                         ProblemType.HTTP_METHOD_NOT_FOUND.getType(),
                         ProblemType.HTTP_METHOD_NOT_FOUND.getCode(),
                         ProblemType.HTTP_METHOD_NOT_FOUND.getStatus().value(),

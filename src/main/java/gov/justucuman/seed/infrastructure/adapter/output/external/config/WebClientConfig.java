@@ -3,6 +3,8 @@ package gov.justucuman.seed.infrastructure.adapter.output.external.config;
 import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.handler.timeout.WriteTimeoutHandler;
+import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -15,9 +17,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 import reactor.netty.http.client.HttpClient;
 
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
-
 @Slf4j
 @Configuration
 public class WebClientConfig {
@@ -29,21 +28,20 @@ public class WebClientConfig {
     private String baseUrl;
 
     /**
-     * Configure HttpClient with timeouts
+     * Configure HttpClient with timeouts.
      */
     private HttpClient httpClient() {
         return HttpClient.create()
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, timeout)
                 .responseTimeout(Duration.ofMillis(timeout))
-                .doOnConnected(conn ->
-                        conn.addHandlerLast(new ReadTimeoutHandler(timeout, TimeUnit.MILLISECONDS))
-                                .addHandlerLast(new WriteTimeoutHandler(timeout, TimeUnit.MILLISECONDS)));
+                .doOnConnected(conn -> conn.addHandlerLast(new ReadTimeoutHandler(timeout, TimeUnit.MILLISECONDS))
+                        .addHandlerLast(new WriteTimeoutHandler(timeout, TimeUnit.MILLISECONDS)));
     }
 
     /**
-     * WebClient for Product API
+     * WebClient for Product API.
      * Note: In Spring Boot 4, WebClient.Builder autoconfiguration may not be available,
-     * so we create WebClient directly
+     * so we create WebClient directly.
      */
     @Bean
     public WebClient productWebClient() {
@@ -59,19 +57,20 @@ public class WebClientConfig {
     }
 
     /**
-     * Log request details
+     * Log request details.
      */
     private ExchangeFilterFunction logRequest() {
         return ExchangeFilterFunction.ofRequestProcessor(clientRequest -> {
             log.debug("Request: {} {}", clientRequest.method(), clientRequest.url());
-            clientRequest.headers().forEach((name, values) ->
-                    values.forEach(value -> log.debug("Header: {}={}", name, value)));
+            clientRequest
+                    .headers()
+                    .forEach((name, values) -> values.forEach(value -> log.debug("Header: {}={}", name, value)));
             return Mono.just(clientRequest);
         });
     }
 
     /**
-     * Log response details
+     * Log response details.
      */
     private ExchangeFilterFunction logResponse() {
         return ExchangeFilterFunction.ofResponseProcessor(clientResponse -> {
@@ -81,17 +80,16 @@ public class WebClientConfig {
     }
 
     /**
-     * Handle errors
+     * Handle errors.
      */
     private ExchangeFilterFunction handleError() {
         return ExchangeFilterFunction.ofResponseProcessor(clientResponse -> {
             if (clientResponse.statusCode().isError()) {
-                return clientResponse.bodyToMono(String.class)
-                        .flatMap(errorBody -> {
-                            log.error("Error response from external API: {} - Body: {}",
-                                    clientResponse.statusCode(), errorBody);
-                            return Mono.just(clientResponse);
-                        });
+                return clientResponse.bodyToMono(String.class).flatMap(errorBody -> {
+                    log.error(
+                            "Error response from external API: {} - Body: {}", clientResponse.statusCode(), errorBody);
+                    return Mono.just(clientResponse);
+                });
             }
             return Mono.just(clientResponse);
         });

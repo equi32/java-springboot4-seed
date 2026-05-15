@@ -11,6 +11,4 @@ public record ProductDocument(
         BigDecimal price,
         Integer stock,
         String status,
-        LocalDateTime createdAt
-) {
-}
+        LocalDateTime createdAt) {}

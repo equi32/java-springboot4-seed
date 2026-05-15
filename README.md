@@ -8,7 +8,7 @@ A production-ready microservice template built with **Spring Boot 4**, **Java 25
 - **Spring Boot 4 + Java 25** — uses the latest releases and the new `spring-boot-starter-opentelemetry`, Jackson 3, Spring Web with virtual-thread-friendly defaults, and Hibernate 7.
 - **Observability is built in, not bolted on** — traces, metrics, and logs are exported via OTLP from day one, fully decoupled from any specific backend (Grafana stack provided as a sample).
 - **Testing without mocks where it matters** — integration tests use real Postgres + OpenSearch via Testcontainers 2.0 and Karate. No `MockMvc`-only happy paths.
-- **Strict quality gates** — Checkstyle (Google Style), JaCoCo with per-layer thresholds, and a single `./gradlew check` that gates merges.
+- **Strict quality gates** — Spotless (palantir-java-format auto-formatter), Checkstyle, JaCoCo with per-layer thresholds, ArchUnit hexagonal rules, and a single `./gradlew check` that gates merges.
 
 ## Tech Stack
 
@@ -24,7 +24,7 @@ A production-ready microservice template built with **Spring Boot 4**, **Java 25
 | Mapping | MapStruct 1.6.3, Lombok |
 | Observability | OpenTelemetry (traces + metrics + logs via OTLP), Micrometer, Logbook |
 | Testing | JUnit 5, Karate 1.5, Testcontainers 2.0 |
-| Quality | Checkstyle (Google Style), JaCoCo |
+| Quality | Spotless 7.0 + palantir-java-format 2.90, Checkstyle 10.21, JaCoCo, ArchUnit |
 
 ## Architecture
 
@@ -166,6 +166,12 @@ All deployment-specific config is driven by environment variables (or vault-inje
 # Run a single test class
 ./gradlew test --tests "gov.justucuman.seed.integration.ProductIntegrationTest"
 
+# Auto-format all Java sources (palantir-java-format in place, 4-space, 120-col)
+./gradlew spotlessApply
+
+# Verify formatting only (runs as part of ./gradlew check; fails if anything is unformatted)
+./gradlew spotlessCheck
+
 # Checkstyle
 ./gradlew checkstyleMain
 
@@ -226,17 +232,66 @@ Enforced by JaCoCo on every `./gradlew check`:
 | Layer | Minimum |
 |---|---|
 | Overall | 60% |
-| `domain/` | 80% |
+| `domain/` | 90% |
 | `application/` | 70% |
 | `infrastructure/` | 50% |
 
 Excluded from coverage: DTOs, records, configs, MapStruct generated code, exceptions, constants, Kafka adapters under `event/**`.
 
+### Why coverage differs by layer
+
+A flat target across the whole codebase (e.g. uniform 80%) is a common anti-pattern in Hexagonal Architecture projects. It pushes teams toward writing low-value tests against framework glue code (mocking `EntityManager`, `KafkaTemplate`, `WebClient`) while undertesting the business logic where bugs actually hurt. This project uses **differentiated, layer-aware thresholds** instead:
+
+- **`domain/` — 90%.** The domain has zero framework dependencies and contains the business rules. It is cheap and fast to unit test, and bugs here have the largest blast radius. The bar is intentionally the strictest in the project.
+- **`application/` — 70%.** Use cases are mostly orchestration over domain + ports. They are exercised both by unit tests (with port doubles) and by integration tests (which JaCoCo may credit only partially). A medium bar keeps coverage meaningful without forcing redundant tests.
+- **`infrastructure/` — 50%.** Adapters (REST, JPA, Kafka, OpenSearch) are thin glue to external systems. Their real correctness is validated by the **Karate + Testcontainers** integration tests (`./gradlew test` boots real Postgres/OpenSearch), not by unit tests with mocks. Forcing 80% here typically produces mock-the-framework tests that catch no real bugs.
+- **Overall — 60%.** A realistic weighted aggregate given the layer mix and the exclusion list (DTOs, configs, generated mappers, exceptions, constants).
+
+> **Note.** Coverage is a proxy for test quality, not the goal itself. If you want a stronger signal on the domain and application layers, add **mutation testing** (e.g. [PIT](https://pitest.org/)) — it measures whether tests actually detect injected faults, which line coverage can't tell you. The differentiated thresholds above are what mature teams using Hexagonal/Clean Architecture tend to converge on in practice.
+
+## Architecture Rules (ArchUnit)
+
+The hexagonal layering is enforced at build time by **ArchUnit** (`HexagonalArchitectureTest`). Violations fail `./gradlew check`, so a bad import is caught the same way a failing test or coverage gap is.
+
+| Rule | What it enforces |
+|---|---|
+| `domain_should_be_framework_agnostic` | Classes under `domain/**` must not import Spring, JPA/Hibernate, Kafka, OpenSearch, MapStruct, Jackson, Reactor, springdoc, etc. The hexagon's core stays pure Java. |
+| `domain_should_not_depend_on_application_or_infrastructure` | Dependencies flow inward only: `infrastructure → application → domain`. Domain never reaches outward. |
+| `application_should_not_depend_on_infrastructure` | Use cases must not know about adapters — they depend on ports declared in the domain. |
+| `port_in_should_be_implemented_only_in_application` | Implementations of `domain/port/in/*` interfaces (use cases) must live under `application/**`. |
+| `port_out_should_be_implemented_only_in_infrastructure_output` | Implementations of `domain/port/out/*` interfaces (adapters) must live under `infrastructure/adapter/output/**`. |
+
+When a rule fails, the test report at `build/reports/tests/test/.../HexagonalArchitectureTest/<rule-name>.html` lists the exact offending classes and dependencies.
+
 ## Code Style
 
-Enforced via **Checkstyle 10.21.2** with Google Java Style:
-- 2-space indentation
-- 100-character line limit
+Two complementary tools — Spotless auto-formats, Checkstyle audits what Spotless can't fix.
+
+### Auto-formatting — Spotless + palantir-java-format
+
+`./gradlew spotlessApply` rewrites every Java file in place using:
+
+| Step | Purpose |
+|---|---|
+| `indentWithSpaces(4)` | Tabs → 4 spaces, including inside Java text blocks (`"""`) which palantir intentionally skips |
+| `palantirJavaFormat("2.90.0")` | 4-space indent, graph-based line wrapping, 120-character lines |
+| `removeUnusedImports` | Drops unused imports |
+| `trimTrailingWhitespace` | Strips end-of-line spaces |
+| `endWithNewline` | Ensures every file ends with `\n` |
+
+`./gradlew spotlessCheck` runs as part of `check` and fails the build if anything is unformatted, so CI catches it.
+
+**Why palantir-java-format over google-java-format?** This codebase is 4-space indented and uses moderate line wrapping. Google's formatter is 2-space and aggressively explodes long method calls; palantir keeps single-line calls on one line when they fit. Palantir produces a much smaller, less surprising diff against existing code.
+
+### Static analysis — Checkstyle
+
+**Checkstyle 10.21.2** with a customized configuration started from Google Java Style:
+
+- **4-space indentation** (classic Java; aligned with palantir's output)
+- **120-character line limit** (matches palantir's default)
+- `MissingJavadocType` / `MissingJavadocMethod` **disabled** — public-API Javadoc is opt-in. The classes are named to convey their role (`CreateProductController`, `ProductFindByIdJpaAdapter`); doc comments are added where they add value.
+- `JavadocParagraph` **disabled** — Google's `<p>`-tag spacing convention isn't enforced, since palantir can't auto-fix it.
+- `AbbreviationAsWordInName` relaxed (`allowedAbbreviationLength=4`) — allows common acronyms in identifiers (`URL`, `API`, `OpenAPI`, `HTTPS`, …).
 - Configuration: `config/codestyle/checks.xml`
 
 ## API

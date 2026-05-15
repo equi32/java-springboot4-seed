@@ -6,6 +6,7 @@ import gov.justucuman.seed.infrastructure.adapter.input.rest.mapper.CreateProduc
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -14,8 +15,6 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.UUID;
 
 @Slf4j
 @RestController
@@ -28,12 +27,9 @@ public class UpdateProductController {
 
     @Operation(summary = "Updates an existing product")
     @PutMapping(value = "/{id}", version = "1")
-    public ResponseEntity<Void> perform(
-            @PathVariable UUID id,
-            @Valid @RequestBody CreateProductRequest request) {
+    public ResponseEntity<Void> perform(@PathVariable UUID id, @Valid @RequestBody CreateProductRequest request) {
         log.info("PUT /api/v1/products/{} with request {}", id, request);
-        updateProduct.perform(CreateProductMapper.INSTANCE.toDomain(request)
-                .withId(id));
+        updateProduct.perform(CreateProductMapper.INSTANCE.toDomain(request).withId(id));
         return ResponseEntity.noContent().build();
     }
 }

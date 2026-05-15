@@ -1,11 +1,10 @@
 package gov.justucuman.seed.test.containers;
 
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.testcontainers.containers.MockServerContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.utility.DockerImageName;
-
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 
 /**
  * Interface declaring Testcontainers for integration testing.
@@ -21,35 +20,31 @@ import org.springframework.boot.testcontainers.service.connection.ServiceConnect
  */
 public interface TestContainers {
 
-	/**
-	 * PostgreSQL container for database integration tests.
-	 * <p>
-	 * The {@code @ServiceConnection} annotation automatically configures:
-	 * <ul>
-	 *   <li>Spring DataSource properties</li>
-	 *   <li>Flyway migration configuration</li>
-	 *   <li>JPA/Hibernate EntityManagerFactory</li>
-	 * </ul>
-	 */
-	@Container
-	@ServiceConnection
-	PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>(
-			DockerImageName.parse("postgres:16-alpine")
-	)
-			.withDatabaseName("seed_db")
-			.withUsername("dev_user")
-			.withPassword("dev_password");
+    /**
+     * PostgreSQL container for database integration tests.
+     * <p>
+     * The {@code @ServiceConnection} annotation automatically configures:
+     * <ul>
+     *   <li>Spring DataSource properties</li>
+     *   <li>Flyway migration configuration</li>
+     *   <li>JPA/Hibernate EntityManagerFactory</li>
+     * </ul>
+     */
+    @Container
+    @ServiceConnection
+    PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>(DockerImageName.parse("postgres:16-alpine"))
+            .withDatabaseName("seed_db")
+            .withUsername("dev_user")
+            .withPassword("dev_password");
 
-	/**
-	 * MockServer container for mocking external APIs in integration tests.
-	 * <p>
-	 * Note: MockServer doesn't have built-in {@code @ServiceConnection} support,
-	 * so the URL needs to be configured via {@code @DynamicPropertySource}
-	 * or directly in the test configuration.
-	 */
-	@Container
-	MockServerContainer mockServerContainer = new MockServerContainer(
-			DockerImageName.parse("mockserver/mockserver:5.15.0")
-	);
-
+    /**
+     * MockServer container for mocking external APIs in integration tests.
+     * <p>
+     * Note: MockServer doesn't have built-in {@code @ServiceConnection} support,
+     * so the URL needs to be configured via {@code @DynamicPropertySource}
+     * or directly in the test configuration.
+     */
+    @Container
+    MockServerContainer mockServerContainer =
+            new MockServerContainer(DockerImageName.parse("mockserver/mockserver:5.15.0"));
 }

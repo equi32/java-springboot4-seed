@@ -3,10 +3,9 @@ package gov.justucuman.seed.application;
 import gov.justucuman.seed.domain.model.Product;
 import gov.justucuman.seed.domain.port.in.SearchProduct;
 import gov.justucuman.seed.domain.port.out.ProductSearchPort;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor

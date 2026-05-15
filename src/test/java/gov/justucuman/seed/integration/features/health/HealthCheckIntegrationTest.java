@@ -19,9 +19,8 @@ import gov.justucuman.seed.integration.IntegrationTestRunner;
  */
 public class HealthCheckIntegrationTest extends IntegrationTestRunner {
 
-	@Override
-	public String getFeatureDirectory() {
-		return "health";
-	}
-
+    @Override
+    public String getFeatureDirectory() {
+        return "health";
+    }
 }

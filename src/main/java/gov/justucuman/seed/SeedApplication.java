@@ -9,5 +9,3 @@ public class SeedApplication {
         SpringApplication.run(SeedApplication.class, args);
     }
 }
-
-
