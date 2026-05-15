@@ -17,9 +17,8 @@ import gov.justucuman.seed.integration.IntegrationTestRunner;
  */
 public class ProductIntegrationTest extends IntegrationTestRunner {
 
-	@Override
-	public String getFeatureDirectory() {
-		return "products";
-	}
-
+    @Override
+    public String getFeatureDirectory() {
+        return "products";
+    }
 }

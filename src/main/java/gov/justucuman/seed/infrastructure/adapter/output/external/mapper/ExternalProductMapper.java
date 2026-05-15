@@ -3,16 +3,14 @@ package gov.justucuman.seed.infrastructure.adapter.output.external.mapper;
 import gov.justucuman.seed.domain.model.Product;
 import gov.justucuman.seed.domain.model.ProductStatus;
 import gov.justucuman.seed.infrastructure.adapter.output.external.dto.ExternalProductResponse;
+import java.time.LocalDateTime;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.factory.Mappers;
 
-import java.time.LocalDateTime;
-
 @Mapper(
         componentModel = "spring",
-        imports = {LocalDateTime.class, ProductStatus.class}
-)
+        imports = {LocalDateTime.class, ProductStatus.class})
 public interface ExternalProductMapper {
     ExternalProductMapper INSTANCE = Mappers.getMapper(ExternalProductMapper.class);
 

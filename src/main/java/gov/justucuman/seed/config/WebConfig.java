@@ -14,8 +14,7 @@ class WebConfig implements WebMvcConfigurer {
         configurer
                 .usePathSegment(1, path -> {
                     String value = path.pathWithinApplication().value();
-                    return value.startsWith(VERSIONED_PATH_PREFIX)
-                            && value.length() > VERSIONED_PATH_PREFIX.length();
+                    return value.startsWith(VERSIONED_PATH_PREFIX) && value.length() > VERSIONED_PATH_PREFIX.length();
                 })
                 .setVersionParser(new VPrefixedIntegerApiVersionParser())
                 .setVersionRequired(false);

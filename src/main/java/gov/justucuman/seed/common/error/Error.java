@@ -1,14 +1,10 @@
 package gov.justucuman.seed.common.error;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-
 import java.net.URI;
 import java.util.List;
 
-@Schema(
-        name = "Error",
-        description = "An error representation"
-)
+@Schema(name = "Error", description = "An error representation")
 public record Error(
         URI type,
         String code,
@@ -16,6 +12,4 @@ public record Error(
         String title,
         String message,
         String instance,
-        List<ErrorDetail> details
-) {
-}
+        List<ErrorDetail> details) {}

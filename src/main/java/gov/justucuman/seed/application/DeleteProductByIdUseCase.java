@@ -6,10 +6,9 @@ import gov.justucuman.seed.domain.port.in.DeleteProductById;
 import gov.justucuman.seed.domain.port.out.ProductDeleteByIdPort;
 import gov.justucuman.seed.domain.port.out.ProductFindByIdPort;
 import gov.justucuman.seed.domain.port.out.ProductSearchPort;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -21,9 +20,9 @@ public class DeleteProductByIdUseCase implements DeleteProductById {
 
     @Override
     public void perform(UUID id) {
-        Product product = productFindByIdPort.perform(id)
-                        .orElseThrow(() ->
-                                new ProductNotFoundException(String.format("Product with id %s was not found", id)));
+        Product product = productFindByIdPort
+                .perform(id)
+                .orElseThrow(() -> new ProductNotFoundException(String.format("Product with id %s was not found", id)));
         productDeleteByIdPort.perform(product.id());
         productSearchPort.deleteProductFromIndex(product.id().toString());
     }

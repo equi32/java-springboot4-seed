@@ -15,10 +15,7 @@ public class ProductKafkaConsumer {
 
     private final IndexProduct indexProduct;
 
-    @KafkaListener(
-            topics = "${spring.kafka.topics.product-events}",
-            groupId = "${spring.kafka.consumer.group-id}"
-    )
+    @KafkaListener(topics = "${spring.kafka.topics.product-events}", groupId = "${spring.kafka.consumer.group-id}")
     public void consumeProductEvent(ProductEvent event) {
         try {
             log.info("Received product event: {} - Id: {}", event.type(), event.id());

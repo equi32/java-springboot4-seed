@@ -17,7 +17,8 @@ public class UpdateProductUseCase implements UpdateProduct {
 
     @Override
     public void perform(Product product) {
-        Product productDb = productFindByIdPort.perform(product.id())
+        Product productDb = productFindByIdPort
+                .perform(product.id())
                 .orElseThrow(() ->
                         new ProductNotFoundException(String.format("Product with id %s was not found", product.id())));
         productSavePort.perform(product);

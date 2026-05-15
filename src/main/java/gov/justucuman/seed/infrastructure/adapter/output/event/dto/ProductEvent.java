@@ -12,6 +12,4 @@ public record ProductEvent(
         BigDecimal price,
         Integer stock,
         String status,
-        LocalDateTime createdAt
-) {
-}
+        LocalDateTime createdAt) {}

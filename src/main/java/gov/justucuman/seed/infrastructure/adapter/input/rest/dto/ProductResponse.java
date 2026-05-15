@@ -1,7 +1,6 @@
 package gov.justucuman.seed.infrastructure.adapter.input.rest.dto;
 
 import gov.justucuman.seed.domain.model.ProductStatus;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -14,6 +13,4 @@ public record ProductResponse(
         Integer stock,
         ProductStatus status,
         LocalDateTime createdAt,
-        LocalDateTime updatedAt
-) {
-}
+        LocalDateTime updatedAt) {}

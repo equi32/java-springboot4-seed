@@ -37,33 +37,29 @@ import org.testcontainers.containers.MockServerContainer;
 @ImportTestcontainers(TestContainers.class)
 public class TestContainersConfiguration {
 
-	/**
-	 * Creates a {@link MockServerClient} bean connected to the running MockServer container.
-	 * <p>
-	 * This bean can be injected into tests to set up expectations:
-	 * <pre>{@code
-	 * @Autowired
-	 * private MockServerClient mockServerClient;
-	 *
-	 * @Test
-	 * void testWithMockServer() {
-	 *     mockServerClient.when(request()
-	 *         .withPath("/api/external"))
-	 *         .respond(response()
-	 *         .withStatusCode(200)
-	 *         .withBody(json("{\"result\": \"success\"}")));
-	 * }
-	 * }</pre>
-	 *
-	 * @return configured MockServerClient instance
-	 */
-	@Bean
-	@ServiceConnection
-	public MockServerClient mockServerClient(MockServerContainer mockServerContainer) {
-		return new MockServerClient(
-				mockServerContainer.getHost(),
-				mockServerContainer.getServerPort()
-		);
-	}
-
+    /**
+     * Creates a {@link MockServerClient} bean connected to the running MockServer container.
+     * <p>
+     * This bean can be injected into tests to set up expectations:
+     * <pre>{@code
+     * @Autowired
+     * private MockServerClient mockServerClient;
+     *
+     * @Test
+     * void testWithMockServer() {
+     *     mockServerClient.when(request()
+     *         .withPath("/api/external"))
+     *         .respond(response()
+     *         .withStatusCode(200)
+     *         .withBody(json("{\"result\": \"success\"}")));
+     * }
+     * }</pre>
+     *
+     * @return configured MockServerClient instance
+     */
+    @Bean
+    @ServiceConnection
+    public MockServerClient mockServerClient(MockServerContainer mockServerContainer) {
+        return new MockServerClient(mockServerContainer.getHost(), mockServerContainer.getServerPort());
+    }
 }

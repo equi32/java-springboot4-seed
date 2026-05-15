@@ -5,6 +5,8 @@ import gov.justucuman.seed.domain.port.out.ExternalProductPort;
 import gov.justucuman.seed.infrastructure.adapter.output.external.dto.ExternalProductResponse;
 import gov.justucuman.seed.infrastructure.adapter.output.external.exception.ExternalApiException;
 import gov.justucuman.seed.infrastructure.adapter.output.external.mapper.ExternalProductMapper;
+import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,9 +15,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
-
-import java.util.List;
-import java.util.Optional;
 
 @Slf4j
 @Component
@@ -67,9 +66,11 @@ public class ProductWebClientAdapter implements ExternalProductPort {
     }
 
     private Mono<? extends Throwable> handleErrors(ClientResponse response) {
-        log.info("Error {} from external client {}", response.statusCode(), response.bodyToMono(String.class).block());
-        return response
-                .bodyToMono(String.class)
+        log.info(
+                "Error {} from external client {}",
+                response.statusCode(),
+                response.bodyToMono(String.class).block());
+        return response.bodyToMono(String.class)
                 .defaultIfEmpty("Empty body")
                 .flatMap(error -> Mono.error(new RuntimeException(error)));
     }

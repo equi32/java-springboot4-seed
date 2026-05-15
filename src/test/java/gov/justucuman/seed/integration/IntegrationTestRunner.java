@@ -1,13 +1,15 @@
 package gov.justucuman.seed.integration;
 
+import com.intuit.karate.junit5.Karate;
 import gov.justucuman.seed.SeedApplication;
 import gov.justucuman.seed.integration.components.ArgumentAwareComponent;
 import gov.justucuman.seed.integration.karate.KarateBridge;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-
-import com.intuit.karate.junit5.Karate;
-
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.TestInstance;
@@ -17,11 +19,6 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Abstract base class for Karate-based integration tests.
@@ -53,168 +50,165 @@ import java.util.stream.Collectors;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public abstract class IntegrationTestRunner {
 
-	/**
-	 * Server port for the application during tests.
-	 */
-	private final Integer serverPort = 8080;
+    /**
+     * Server port for the application during tests.
+     */
+    private final Integer serverPort = 8080;
 
-	/**
-	 * Base path for Karate feature files.
-	 */
-	private final String basePath = "classpath:integration/features";
+    /**
+     * Base path for Karate feature files.
+     */
+    private final String basePath = "classpath:integration/features";
 
-	/**
-	 * The Spring application context.
-	 */
-	private ConfigurableApplicationContext context;
+    /**
+     * The Spring application context.
+     */
+    private ConfigurableApplicationContext context;
 
-	/**
-	 * List of components that provide custom Spring Boot arguments.
-	 */
-	private final List<ArgumentAwareComponent> components = new ArrayList<>();
+    /**
+     * List of components that provide custom Spring Boot arguments.
+     */
+    private final List<ArgumentAwareComponent> components = new ArrayList<>();
 
-	/**
-	 * PostgreSQL container for integration tests.
-	 * <p>
-	 * Manually managed since Karate runs outside Spring's test context.
-	 */
-	private final PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>(
-			DockerImageName.parse("postgres:16-alpine")
-	)
-			.withDatabaseName("seed_db")
-			.withUsername("dev_user")
-			.withPassword("dev_password");
+    /**
+     * PostgreSQL container for integration tests.
+     * <p>
+     * Manually managed since Karate runs outside Spring's test context.
+     */
+    private final PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>(
+                    DockerImageName.parse("postgres:16-alpine"))
+            .withDatabaseName("seed_db")
+            .withUsername("dev_user")
+            .withPassword("dev_password");
 
-	private static final String TEST_OPENSEARCH_INDEX = "products-test";
+    private static final String TEST_OPENSEARCH_INDEX = "products-test";
 
-	@SuppressWarnings("resource")
-	private final GenericContainer<?> openSearchContainer = new GenericContainer<>(
-			DockerImageName.parse("opensearchproject/opensearch:2.11.1")
-	)
-			.withEnv("discovery.type", "single-node")
-			.withEnv("plugins.security.disabled", "true")
-			.withEnv("OPENSEARCH_JAVA_OPTS", "-Xms512m -Xmx512m")
-			.withExposedPorts(9200)
-			.waitingFor(Wait.forHttp("/").forPort(9200).forStatusCode(200));
+    @SuppressWarnings("resource")
+    private final GenericContainer<?> openSearchContainer = new GenericContainer<>(
+                    DockerImageName.parse("opensearchproject/opensearch:2.11.1"))
+            .withEnv("discovery.type", "single-node")
+            .withEnv("plugins.security.disabled", "true")
+            .withEnv("OPENSEARCH_JAVA_OPTS", "-Xms512m -Xmx512m")
+            .withExposedPorts(9200)
+            .waitingFor(Wait.forHttp("/").forPort(9200).forStatusCode(200));
 
-	/**
-	 * Initializes the Spring Boot application context with test configuration.
-	 * <p>
-	 * This method:
-	 * <ol>
-	 *   <li>Starts the PostgreSQL container</li>
-	 *   <li>Starts all registered {@link ArgumentAwareComponent} instances</li>
-	 *   <li>Collects custom Spring Boot arguments from components</li>
-	 *   <li>Configures datasource properties from the running container</li>
-	 *   <li>Starts the application with test profile and custom arguments</li>
-	 * </ol>
-	 *
-	 * @throws IOException if application context fails to start
-	 * @throws InterruptedException if application startup is interrupted
-	 */
-	@BeforeAll
-	protected void initContext() throws IOException, InterruptedException {
-		log.info("Starting integration test context");
+    /**
+     * Initializes the Spring Boot application context with test configuration.
+     * <p>
+     * This method:
+     * <ol>
+     *   <li>Starts the PostgreSQL container</li>
+     *   <li>Starts all registered {@link ArgumentAwareComponent} instances</li>
+     *   <li>Collects custom Spring Boot arguments from components</li>
+     *   <li>Configures datasource properties from the running container</li>
+     *   <li>Starts the application with test profile and custom arguments</li>
+     * </ol>
+     *
+     * @throws IOException if application context fails to start
+     * @throws InterruptedException if application startup is interrupted
+     */
+    @BeforeAll
+    protected void initContext() throws IOException, InterruptedException {
+        log.info("Starting integration test context");
 
-		// Start PostgreSQL container
-		log.info("Starting PostgreSQL container");
-		postgresContainer.start();
+        // Start PostgreSQL container
+        log.info("Starting PostgreSQL container");
+        postgresContainer.start();
 
-		// Start OpenSearch container so the search adapter can index/query during tests
-		log.info("Starting OpenSearch container");
-		openSearchContainer.start();
+        // Start OpenSearch container so the search adapter can index/query during tests
+        log.info("Starting OpenSearch container");
+        openSearchContainer.start();
 
-		// Start all registered components
-		components.forEach(ArgumentAwareComponent::start);
+        // Start all registered components
+        components.forEach(ArgumentAwareComponent::start);
 
-		// Collect Spring Boot arguments from components
-		List<String> arguments = components.stream()
-				.flatMap(component -> component.argumentList().stream())
-				.collect(Collectors.toList());
+        // Collect Spring Boot arguments from components
+        List<String> arguments = components.stream()
+                .flatMap(component -> component.argumentList().stream())
+                .collect(Collectors.toList());
 
-		// Add standard test configuration
-		arguments.add("--server.port=" + serverPort);
-		// Use Hibernate to create schema for tests (simpler than Flyway for integration tests)
-		arguments.add("--spring.jpa.hibernate.ddl-auto=create-drop");
-		arguments.add("--spring.flyway.enabled=false");
-		arguments.add("--spring.profiles.active=test");
+        // Add standard test configuration
+        arguments.add("--server.port=" + serverPort);
+        // Use Hibernate to create schema for tests (simpler than Flyway for integration tests)
+        arguments.add("--spring.jpa.hibernate.ddl-auto=create-drop");
+        arguments.add("--spring.flyway.enabled=false");
+        arguments.add("--spring.profiles.active=test");
 
-		// Configure datasource from the running PostgreSQL container
-		arguments.add("--spring.datasource.url=" + postgresContainer.getJdbcUrl());
-		arguments.add("--spring.datasource.username=" + postgresContainer.getUsername());
-		arguments.add("--spring.datasource.password=" + postgresContainer.getPassword());
-		arguments.add("--spring.datasource.driver-class-name=org.postgresql.Driver");
+        // Configure datasource from the running PostgreSQL container
+        arguments.add("--spring.datasource.url=" + postgresContainer.getJdbcUrl());
+        arguments.add("--spring.datasource.username=" + postgresContainer.getUsername());
+        arguments.add("--spring.datasource.password=" + postgresContainer.getPassword());
+        arguments.add("--spring.datasource.driver-class-name=org.postgresql.Driver");
 
-		// Wire the OpenSearch adapter to the container started above
-		arguments.add("--elasticsearch.host=" + openSearchContainer.getHost());
-		arguments.add("--elasticsearch.port=" + openSearchContainer.getMappedPort(9200));
-		arguments.add("--elasticsearch.scheme=http");
-		arguments.add("--elasticsearch.username=admin");
-		arguments.add("--elasticsearch.password=admin");
-		arguments.add("--elasticsearch.index.products=" + TEST_OPENSEARCH_INDEX);
-		// Kafka stays off — IntegrationTestRunner doesn't run a broker, and the
-		// indexing flow is exercised directly from feature steps via KarateBridge.
-		arguments.add("--kafka.enabled=false");
+        // Wire the OpenSearch adapter to the container started above
+        arguments.add("--elasticsearch.host=" + openSearchContainer.getHost());
+        arguments.add("--elasticsearch.port=" + openSearchContainer.getMappedPort(9200));
+        arguments.add("--elasticsearch.scheme=http");
+        arguments.add("--elasticsearch.username=admin");
+        arguments.add("--elasticsearch.password=admin");
+        arguments.add("--elasticsearch.index.products=" + TEST_OPENSEARCH_INDEX);
+        // Kafka stays off — IntegrationTestRunner doesn't run a broker, and the
+        // indexing flow is exercised directly from feature steps via KarateBridge.
+        arguments.add("--kafka.enabled=false");
 
-		log.info("Starting application with arguments: {}", arguments);
+        log.info("Starting application with arguments: {}", arguments);
 
-		// Start the Spring Boot application
-		context = SpringApplication.run(SeedApplication.class, arguments.toArray(String[]::new));
+        // Start the Spring Boot application
+        context = SpringApplication.run(SeedApplication.class, arguments.toArray(String[]::new));
 
-		// Expose Spring beans to Karate feature steps so they can index synchronously
-		KarateBridge.initialize(context, TEST_OPENSEARCH_INDEX);
-	}
+        // Expose Spring beans to Karate feature steps so they can index synchronously
+        KarateBridge.initialize(context, TEST_OPENSEARCH_INDEX);
+    }
 
-	/**
-	 * Executes the Karate feature tests.
-	 * <p>
-	 * Features are loaded from {@code classpath:integration/features/{getFeatureDirectory()}.feature}
-	 *
-	 * @return Karate test runner configured for the feature file
-	 */
-	@Karate.Test
-	Karate runFeatureTest() {
-		return Karate.run(basePath + "/" + getFeatureDirectory() + ".feature")
-				.karateEnv("test")
-				.systemProperty("baseUrl", "http://localhost:" + serverPort);
-	}
+    /**
+     * Executes the Karate feature tests.
+     * <p>
+     * Features are loaded from {@code classpath:integration/features/{getFeatureDirectory()}.feature}
+     *
+     * @return Karate test runner configured for the feature file
+     */
+    @Karate.Test
+    Karate runFeatureTest() {
+        return Karate.run(basePath + "/" + getFeatureDirectory() + ".feature")
+                .karateEnv("test")
+                .systemProperty("baseUrl", "http://localhost:" + serverPort);
+    }
 
-	/**
-	 * Shuts down the Spring application context, stops all components, and stops the PostgreSQL container.
-	 */
-	@AfterAll
-	protected void closeContext() {
-		log.info("Stopping integration test context");
-		if (context != null) {
-			context.close();
-		}
-		components.forEach(ArgumentAwareComponent::stop);
-		if (postgresContainer != null && postgresContainer.isRunning()) {
-			postgresContainer.stop();
-		}
-		if (openSearchContainer != null && openSearchContainer.isRunning()) {
-			openSearchContainer.stop();
-		}
-	}
+    /**
+     * Shuts down the Spring application context, stops all components, and stops the PostgreSQL container.
+     */
+    @AfterAll
+    protected void closeContext() {
+        log.info("Stopping integration test context");
+        if (context != null) {
+            context.close();
+        }
+        components.forEach(ArgumentAwareComponent::stop);
+        if (postgresContainer != null && postgresContainer.isRunning()) {
+            postgresContainer.stop();
+        }
+        if (openSearchContainer != null && openSearchContainer.isRunning()) {
+            openSearchContainer.stop();
+        }
+    }
 
-	/**
-	 * Registers a component for lifecycle management.
-	 * <p>
-	 * Components will be started before the application context and stopped after all tests.
-	 *
-	 * @param component the component to register
-	 */
-	protected void registerComponent(ArgumentAwareComponent component) {
-		components.add(component);
-	}
+    /**
+     * Registers a component for lifecycle management.
+     * <p>
+     * Components will be started before the application context and stopped after all tests.
+     *
+     * @param component the component to register
+     */
+    protected void registerComponent(ArgumentAwareComponent component) {
+        components.add(component);
+    }
 
-	/**
-	 * Returns the feature file name for this test class (without the .feature extension).
-	 * <p>
-	 * Feature files should be located in {@code src/test/resources/integration/features/}
-	 *
-	 * @return the feature file name without extension (e.g., {@code "products"})
-	 */
-	public abstract String getFeatureDirectory();
-
+    /**
+     * Returns the feature file name for this test class (without the .feature extension).
+     * <p>
+     * Feature files should be located in {@code src/test/resources/integration/features/}
+     *
+     * @return the feature file name without extension (e.g., {@code "products"})
+     */
+    public abstract String getFeatureDirectory();
 }

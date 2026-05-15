@@ -4,6 +4,7 @@ plugins {
 	id("io.spring.dependency-management") version "1.1.7"
 	id("org.flywaydb.flyway") version "11.11.0"
 	id("checkstyle")
+	id("com.diffplug.spotless") version "7.0.4"
 	jacoco
 }
 
@@ -25,6 +26,33 @@ repositories {
 checkstyle {
 	toolVersion = "10.21.2"
 	configFile = file("${project.rootDir}/config/codestyle/checks.xml")
+}
+
+// Spotless: auto-formatter that runs palantir-java-format (4-space, classic Java style)
+// over all Java sources. `./gradlew spotlessApply` rewrites files in place; `spotlessCheck`
+// runs as part of `check` and fails the build if anything is unformatted.
+// Palantir was chosen over google-java-format because the codebase is 4-space indented and
+// Palantir's graph-based line wrapping leaves single-line method calls alone when they fit
+// (Google explodes them aggressively, producing a much noisier diff).
+spotless {
+	java {
+		target("src/**/*.java")
+		// MapStruct generates *Impl.java under build/generated/...; Spotless's default
+		// target already excludes build/, but be explicit so future generators don't sneak in.
+		targetExclude("build/**", "**/generated/**")
+		// indentWithSpaces runs BEFORE palantirJavaFormat so it normalizes leading tabs
+		// inside Java text blocks (""") too — palantir intentionally never touches text
+		// block content, so without this step checkstyle's FileTabCharacter would still
+		// fire on JSON/SQL embedded in test files.
+		indentWithSpaces(4)
+		// 2.71.0+ is required for JDK 25 compatibility (fixes a NoSuchMethodError
+		// on DeferredDiagnosticHandler.getDiagnostics whose return type changed in
+		// JDK 25). 2.90.0 is the latest stable as of this configuration.
+		palantirJavaFormat("2.90.0")
+		removeUnusedImports()
+		trimTrailingWhitespace()
+		endWithNewline()
+	}
 }
 
 dependencies {

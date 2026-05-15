@@ -8,7 +8,7 @@ A production-ready microservice template built with **Spring Boot 4**, **Java 25
 - **Spring Boot 4 + Java 25** — uses the latest releases and the new `spring-boot-starter-opentelemetry`, Jackson 3, Spring Web with virtual-thread-friendly defaults, and Hibernate 7.
 - **Observability is built in, not bolted on** — traces, metrics, and logs are exported via OTLP from day one, fully decoupled from any specific backend (Grafana stack provided as a sample).
 - **Testing without mocks where it matters** — integration tests use real Postgres + OpenSearch via Testcontainers 2.0 and Karate. No `MockMvc`-only happy paths.
-- **Strict quality gates** — Checkstyle (Google Style), JaCoCo with per-layer thresholds, and a single `./gradlew check` that gates merges.
+- **Strict quality gates** — Spotless (palantir-java-format auto-formatter), Checkstyle, JaCoCo with per-layer thresholds, ArchUnit hexagonal rules, and a single `./gradlew check` that gates merges.
 
 ## Tech Stack
 
@@ -24,7 +24,7 @@ A production-ready microservice template built with **Spring Boot 4**, **Java 25
 | Mapping | MapStruct 1.6.3, Lombok |
 | Observability | OpenTelemetry (traces + metrics + logs via OTLP), Micrometer, Logbook |
 | Testing | JUnit 5, Karate 1.5, Testcontainers 2.0 |
-| Quality | Checkstyle (Google Style), JaCoCo |
+| Quality | Spotless 7.0 + palantir-java-format 2.90, Checkstyle 10.21, JaCoCo, ArchUnit |
 
 ## Architecture
 
@@ -166,6 +166,12 @@ All deployment-specific config is driven by environment variables (or vault-inje
 # Run a single test class
 ./gradlew test --tests "gov.justucuman.seed.integration.ProductIntegrationTest"
 
+# Auto-format all Java sources (palantir-java-format in place, 4-space, 120-col)
+./gradlew spotlessApply
+
+# Verify formatting only (runs as part of ./gradlew check; fails if anything is unformatted)
+./gradlew spotlessCheck
+
 # Checkstyle
 ./gradlew checkstyleMain
 
@@ -259,9 +265,33 @@ When a rule fails, the test report at `build/reports/tests/test/.../HexagonalArc
 
 ## Code Style
 
-Enforced via **Checkstyle 10.21.2** with Google Java Style:
-- 2-space indentation
-- 100-character line limit
+Two complementary tools — Spotless auto-formats, Checkstyle audits what Spotless can't fix.
+
+### Auto-formatting — Spotless + palantir-java-format
+
+`./gradlew spotlessApply` rewrites every Java file in place using:
+
+| Step | Purpose |
+|---|---|
+| `indentWithSpaces(4)` | Tabs → 4 spaces, including inside Java text blocks (`"""`) which palantir intentionally skips |
+| `palantirJavaFormat("2.90.0")` | 4-space indent, graph-based line wrapping, 120-character lines |
+| `removeUnusedImports` | Drops unused imports |
+| `trimTrailingWhitespace` | Strips end-of-line spaces |
+| `endWithNewline` | Ensures every file ends with `\n` |
+
+`./gradlew spotlessCheck` runs as part of `check` and fails the build if anything is unformatted, so CI catches it.
+
+**Why palantir-java-format over google-java-format?** This codebase is 4-space indented and uses moderate line wrapping. Google's formatter is 2-space and aggressively explodes long method calls; palantir keeps single-line calls on one line when they fit. Palantir produces a much smaller, less surprising diff against existing code.
+
+### Static analysis — Checkstyle
+
+**Checkstyle 10.21.2** with a customized configuration started from Google Java Style:
+
+- **4-space indentation** (classic Java; aligned with palantir's output)
+- **120-character line limit** (matches palantir's default)
+- `MissingJavadocType` / `MissingJavadocMethod` **disabled** — public-API Javadoc is opt-in. The classes are named to convey their role (`CreateProductController`, `ProductFindByIdJpaAdapter`); doc comments are added where they add value.
+- `JavadocParagraph` **disabled** — Google's `<p>`-tag spacing convention isn't enforced, since palantir can't auto-fix it.
+- `AbbreviationAsWordInName` relaxed (`allowedAbbreviationLength=4`) — allows common acronyms in identifiers (`URL`, `API`, `OpenAPI`, `HTTPS`, …).
 - Configuration: `config/codestyle/checks.xml`
 
 ## API

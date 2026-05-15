@@ -1,10 +1,9 @@
 package gov.justucuman.seed.common.constant;
 
+import java.net.URI;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
-
-import java.net.URI;
 
 @Getter
 @AllArgsConstructor
