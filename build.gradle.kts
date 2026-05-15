@@ -187,6 +187,26 @@ tasks.jacocoTestReport {
 tasks.jacocoTestCoverageVerification {
 	dependsOn(tasks.jacocoTestReport)
 
+	// Apply the same exclusions as jacocoTestReport so verification doesn't fail on
+	// generated/boilerplate code (DTOs, exceptions, configs, MapStruct Impls, ...).
+	classDirectories.setFrom(
+		files(classDirectories.files.map { dir ->
+			fileTree(dir).apply {
+				exclude("**/dto/**")
+				exclude("**/response/**")
+				exclude("**/request/**")
+				exclude("**/document/**")
+				exclude("**/event/**")
+				exclude("**/config/**")
+				exclude("**/mapper/**/*Impl.class")
+				exclude("**/SeedApplication.class")
+				exclude("**/exception/**")
+				exclude("**/constants/**")
+				exclude("**/ProblemType.class")
+			}
+		})
+	)
+
 	violationRules {
 		rule {
 			// Overall project: 60% minimum
@@ -196,15 +216,20 @@ tasks.jacocoTestCoverageVerification {
 		}
 
 		rule {
-			// Domain layer: 80% minimum
+			// Domain layer: 90% minimum
+			// element = PACKAGE so the includes filter actually matches; with the default
+			// BUNDLE element, "gov.justucuman.seed.domain.**" never matches the bundle's name
+			// and the rule silently no-ops.
+			element = "PACKAGE"
 			limit {
-				minimum = 0.80.toBigDecimal()
+				minimum = 0.90.toBigDecimal()
 			}
 			includes = listOf("gov.justucuman.seed.domain.**")
 		}
 
 		rule {
-			// Application layer: 70% minimum
+			// Application layer: 70% minimum (evaluated per package — see comment above)
+			element = "PACKAGE"
 			limit {
 				minimum = 0.70.toBigDecimal()
 			}
@@ -212,7 +237,8 @@ tasks.jacocoTestCoverageVerification {
 		}
 
 		rule {
-			// Infrastructure layer: 50% minimum
+			// Infrastructure layer: 50% minimum (evaluated per package — see comment above)
+			element = "PACKAGE"
 			limit {
 				minimum = 0.50.toBigDecimal()
 			}

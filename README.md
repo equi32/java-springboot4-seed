@@ -226,11 +226,22 @@ Enforced by JaCoCo on every `./gradlew check`:
 | Layer | Minimum |
 |---|---|
 | Overall | 60% |
-| `domain/` | 80% |
+| `domain/` | 90% |
 | `application/` | 70% |
 | `infrastructure/` | 50% |
 
 Excluded from coverage: DTOs, records, configs, MapStruct generated code, exceptions, constants, Kafka adapters under `event/**`.
+
+### Why coverage differs by layer
+
+A flat target across the whole codebase (e.g. uniform 80%) is a common anti-pattern in Hexagonal Architecture projects. It pushes teams toward writing low-value tests against framework glue code (mocking `EntityManager`, `KafkaTemplate`, `WebClient`) while undertesting the business logic where bugs actually hurt. This project uses **differentiated, layer-aware thresholds** instead:
+
+- **`domain/` — 90%.** The domain has zero framework dependencies and contains the business rules. It is cheap and fast to unit test, and bugs here have the largest blast radius. The bar is intentionally the strictest in the project.
+- **`application/` — 70%.** Use cases are mostly orchestration over domain + ports. They are exercised both by unit tests (with port doubles) and by integration tests (which JaCoCo may credit only partially). A medium bar keeps coverage meaningful without forcing redundant tests.
+- **`infrastructure/` — 50%.** Adapters (REST, JPA, Kafka, OpenSearch) are thin glue to external systems. Their real correctness is validated by the **Karate + Testcontainers** integration tests (`./gradlew test` boots real Postgres/OpenSearch), not by unit tests with mocks. Forcing 80% here typically produces mock-the-framework tests that catch no real bugs.
+- **Overall — 60%.** A realistic weighted aggregate given the layer mix and the exclusion list (DTOs, configs, generated mappers, exceptions, constants).
+
+> **Note.** Coverage is a proxy for test quality, not the goal itself. If you want a stronger signal on the domain and application layers, add **mutation testing** (e.g. [PIT](https://pitest.org/)) — it measures whether tests actually detect injected faults, which line coverage can't tell you. The differentiated thresholds above are what mature teams using Hexagonal/Clean Architecture tend to converge on in practice.
 
 ## Code Style
 
