@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/products/external")
+@RequestMapping("/api/{version}/products/external")
 @Tag(name = "External Products", description = "External Product gets API")
 @RequiredArgsConstructor
 public class GetExternalProductByIdController {
@@ -24,7 +24,7 @@ public class GetExternalProductByIdController {
     private final GetExternalProductById getExternalProductById;
 
     @Operation(summary = "Get an External Product by Id")
-    @GetMapping("/{id}")
+    @GetMapping(value = "/{id}", version = "1")
     public ResponseEntity<ProductResponse> perform(@PathVariable Integer id) {
         log.info("GET /api/v1/products/external/{}", id);
         Product product = getExternalProductById.perform(id);

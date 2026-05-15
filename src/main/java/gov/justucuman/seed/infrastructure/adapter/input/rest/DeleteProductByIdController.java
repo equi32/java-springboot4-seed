@@ -15,7 +15,7 @@ import java.util.UUID;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/products")
+@RequestMapping("/api/{version}/products")
 @Tag(name = "Products", description = "Product delete API")
 @RequiredArgsConstructor
 public class DeleteProductByIdController {
@@ -23,7 +23,7 @@ public class DeleteProductByIdController {
     private final DeleteProductById deleteProductById;
 
     @Operation(summary = "Deletes a product by id")
-    @DeleteMapping("/{id}")
+    @DeleteMapping(value = "/{id}", version = "1")
     public ResponseEntity<Void> perform(@PathVariable UUID id) {
         log.info("DELETE /api/v1/products/{}", id);
         deleteProductById.perform(id);

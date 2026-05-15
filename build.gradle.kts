@@ -35,12 +35,29 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-actuator")
 	implementation("org.springframework.boot:spring-boot-starter-kafka")
 
+	// OpenTelemetry: Spring Boot 4's official starter bundles the OTel SDK autoconfig,
+	// Micrometer tracing -> OTel bridge, OTLP exporters for traces/metrics/logs.
+	// Replaces hand-picked micrometer-tracing-bridge-otel + opentelemetry-exporter-otlp + micrometer-registry-otlp,
+	// because in Boot 4 the tracing/logs autoconfig lives in dedicated modules
+	// (spring-boot-micrometer-tracing-opentelemetry, spring-boot-opentelemetry) that this starter pulls in.
+	implementation("org.springframework.boot:spring-boot-starter-opentelemetry")
+	implementation("io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0:2.16.0-alpha")
+	// datasource-micrometer-spring-boot 1.0.5 is incompatible with Spring Boot 4
+	// (references org.springframework.boot.actuate.autoconfigure.observation.ObservationRegistryCustomizer
+	// which was moved/removed in Boot 4). Revisit once a Boot-4-compatible release is published.
+	implementation("net.logstash.logback:logstash-logback-encoder:7.4")
+
+	// HTTP request/response logging (referenced by org.zalando.logbook.Logbook logger in logback-spring.xml)
+	// 4.x line adds Spring Boot 4 + Jackson 3 support. See https://stevenpg.com/posts/spring-boot-4-logbook-now-works/
+	implementation("org.zalando:logbook-spring-boot-starter:4.0.4")
+
 	// Data Access (JPA, PostgreSQL, Redis)
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 	runtimeOnly("org.postgresql:postgresql")
 
-	// OpenAPI (Swagger UI) - Spring Boot 4 compatible version
-	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.13")
+	// OpenAPI (Swagger UI) - 3.x line targets Spring Boot 4 / Jackson 3.
+	// 2.x is pinned to Spring Boot 3 / Jackson 2 and is not compatible.
+	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3")
 
 	// MapStruct
 	implementation("org.mapstruct:mapstruct:1.6.3")
@@ -82,11 +99,12 @@ dependencies {
 
 	// Testcontainers - Spring Boot 4 uses version 2.0
 	testImplementation("org.mock-server:mockserver-client-java:5.15.0")
-	testImplementation("org.testcontainers:testcontainers:1.20.4")
-	testImplementation("org.testcontainers:junit-jupiter:1.20.4")
-	testImplementation("org.testcontainers:mockserver:1.20.4")
-	testImplementation("org.testcontainers:postgresql:1.20.4")
-	testImplementation("org.testcontainers:elasticsearch:1.20.4")
+	testImplementation(platform("org.testcontainers:testcontainers-bom:2.0.5"))
+	testImplementation("org.testcontainers:testcontainers")
+	testImplementation("org.testcontainers:testcontainers-junit-jupiter")
+	testImplementation("org.testcontainers:testcontainers-mockserver")
+	testImplementation("org.testcontainers:testcontainers-postgresql")
+	testImplementation("org.testcontainers:testcontainers-elasticsearch")
 
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }

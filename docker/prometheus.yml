@@ -1,0 +1,18 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+# Metrics arrive via OTLP push (enabled via --web.enable-otlp-receiver flag).
+# These scrape configs cover Prometheus' own health and Tempo's service-graph metrics.
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: otelcol
+    static_configs:
+      - targets: ['otelcol:8888']
+
+storage:
+  tsdb:
+    out_of_order_time_window: 30m

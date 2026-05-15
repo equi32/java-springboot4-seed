@@ -6,6 +6,7 @@ import gov.justucuman.seed.common.error.Error;
 import gov.justucuman.seed.common.error.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
@@ -15,11 +16,33 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.NoHandlerFoundException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.List;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ResponseEntity<ErrorResponse> handle(
+            NoResourceFoundException ex, HttpServletRequest request) {
+        // Static-resource 404s (e.g. browser probes for swagger-ui *.css.map,
+        // /.well-known/appspecific/com.chrome.devtools.json) must not log a
+        // full stack trace via the catch-all Exception handler.
+        ErrorResponse body = new ErrorResponse(
+                new Error(
+                        ProblemType.HTTP_METHOD_NOT_FOUND.getType(),
+                        ProblemType.HTTP_METHOD_NOT_FOUND.getCode(),
+                        ProblemType.HTTP_METHOD_NOT_FOUND.getStatus().value(),
+                        ProblemType.HTTP_METHOD_NOT_FOUND.getTitle(),
+                        ex.getMessage(),
+                        request.getMethod().concat(" ").concat(request.getRequestURI()),
+                        List.of()));
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(body);
+    }
 
     @ExceptionHandler(NoHandlerFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)

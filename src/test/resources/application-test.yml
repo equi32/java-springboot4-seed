@@ -1,0 +1,32 @@
+# Test-profile overrides — auto-loaded by Spring Boot when @ActiveProfiles("test") is set.
+# Lives in src/test/resources so production builds don't ship test-only config.
+
+spring:
+  sql:
+    init:
+      mode: never
+  kafka:
+    consumer:
+      group-id: api-seed-consumer-group-test
+    topics:
+      product-events: product-events-test
+
+elasticsearch:
+  index:
+    products: products-test
+
+# OTel export disabled — integration tests don't need an OTLP collector.
+management:
+  tracing:
+    enabled: false
+  otlp:
+    metrics:
+      export:
+        enabled: false
+
+logging:
+  level:
+    gov.justucuman.seed: DEBUG
+    org.testcontainers: INFO
+    org.mockserver: DEBUG
+    org.zalando.logbook: INFO   # quieter than base TRACE — keeps test logs readable

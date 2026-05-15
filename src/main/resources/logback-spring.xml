@@ -1,0 +1,101 @@
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+
+    <!-- Status listener to ignore status messages from Logback -->
+    <statusListener class="ch.qos.logback.core.status.NopStatusListener" />
+
+    <!-- Sets the context name to the hostname of the machine where the application is running -->
+    <contextName>${HOSTNAME}</contextName>
+
+    <!-- Spring properties to fetch application name and version -->
+    <springProperty name="appname" source="spring.application.name" />
+    <springProperty name="version" source="spring.application.version" />
+
+    <!-- Log level and format properties with default values -->
+    <property name="log_level" value="${LOG_LEVEL:-INFO}" />
+    <property name="request_log_level" value="${REQUEST_LOG_LEVEL:-INFO}" />
+    <property name="log_format" value="${LOG_FORMAT:-console}" />
+
+    <!-- Console appender -->
+    <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${CONSOLE_LOG_PATTERN}</pattern>
+            <charset>utf8</charset>
+        </encoder>
+    </appender>
+
+    <!-- JSON Console Appender -->
+    <appender name="console_json" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <providers>
+                <timestamp>
+                </timestamp>
+                <stackTrace>
+                    <throwableConverter class="net.logstash.logback.stacktrace.ShortenedThrowableConverter">
+                        <maxDepthPerThrowable>30</maxDepthPerThrowable>
+                        <maxLength>2048</maxLength>
+                        <shortenedClassNameLength>20</shortenedClassNameLength>
+                        <rootCauseFirst>true</rootCauseFirst>
+                    </throwableConverter>
+                </stackTrace>
+                <callerData>
+                    <classFieldName>class</classFieldName>
+                    <methodFiledName>method</methodFiledName>
+                    <lineFiledName>line</lineFiledName>
+                </callerData>
+                <logLevel>
+                    <fieldName>log_level</fieldName>
+                </logLevel>
+                <threadName>
+                    <fieldName>thread</fieldName>
+                </threadName>
+                <message>
+                    <fieldName>message</fieldName>
+                </message>
+                <pattern>
+                    <pattern>
+                        {
+                        "pid": "${PID:- }",
+                        "hostname": "%contextName",
+                        "application_name": "${appname:-}",
+                        "application_version": "${version:-}",
+                        "log_level": "${LOG_LEVEL_PATTERN:-%5p}",
+                        "log_type": "${log_level:-}",
+                        "trace_id": "%mdc{trace_id:-}",
+                        "span_id": "%mdc{span_id:-}",
+                        "span_parent_id": "%mdc{parent_id:-}",
+                        "exportable": "%mdc{sampled:-}",
+                        "trace_flags": "%mdc{traceFlags:-}",
+                        "origin_ip": "%mdc{originIp:-}"
+                        }
+                    </pattern>
+                </pattern>
+            </providers>
+        </encoder>
+    </appender>
+
+    <!-- Appender for OpenTelemetry -->
+    <appender name="OTLP" class="io.opentelemetry.instrumentation.logback.appender.v1_0.OpenTelemetryAppender">
+        <captureExperimentalAttributes>true</captureExperimentalAttributes>
+        <captureMdcAttributes>*</captureMdcAttributes>
+        <!-- <appender-ref ref="${log_format}" /> -->
+    </appender>
+
+    <!-- Logger for org.zalando.logbook.Logbook with level and appender -->
+    <logger name="org.zalando.logbook.Logbook" level="${request_log_level}" additivity="false">
+        <appender-ref ref="${log_format}" />
+    </logger>
+
+    <springProfile name="!test">
+        <root level="${log_level}">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="OTLP"/>
+        </root>
+    </springProfile>
+    <springProfile name="test">
+        <root level="${log_level}">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+    </springProfile>
+</configuration>

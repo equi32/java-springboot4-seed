@@ -19,7 +19,7 @@ import java.util.UUID;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/products")
+@RequestMapping("/api/{version}/products")
 @Tag(name = "Products", description = "Product update API")
 @RequiredArgsConstructor
 public class UpdateProductController {
@@ -27,7 +27,7 @@ public class UpdateProductController {
     private final UpdateProduct updateProduct;
 
     @Operation(summary = "Updates an existing product")
-    @PutMapping("/{id}")
+    @PutMapping(value = "/{id}", version = "1")
     public ResponseEntity<Void> perform(
             @PathVariable UUID id,
             @Valid @RequestBody CreateProductRequest request) {

@@ -45,7 +45,7 @@ Feature: Product API Integration Tests
     And match response contains { name: 'Minimal Product', description: '#null', price: 0, stock: 0, status: 'AVAILABLE' }
 
   Scenario: Search products by name
-    # Create products with similar names
+    # Create the product (DB write only — Kafka is disabled in tests, so no auto-index)
     Given path 'api/v1/products'
     And request
         """
@@ -58,13 +58,17 @@ Feature: Product API Integration Tests
         }
         """
     When method post
+    Then status 201
+    * def created = response
+    # Index the product synchronously and refresh the OpenSearch index
+    * eval Java.type('gov.justucuman.seed.integration.karate.KarateBridge').indexAndRefresh(created)
     # Search for products matching the name
     Given path 'api/v1/products/search'
     And param term = 'name'
     And param value = 'Widget'
     When method get
     Then status 200
-    And match response contains any { name: 'Widget Pro' }
+    And match response[*].name contains 'Widget Pro'
 
   Scenario: Create product fails validation with negative price
     Given path 'api/v1/products'
