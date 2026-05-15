@@ -1,11 +1,58 @@
+# ============================================================================
+#  All deployment-specific values are env-driven with sensible local defaults.
+#  In production, supply env vars (or vault-injected secrets) — no per-profile
+#  sections needed. The "test" profile is the one exception: it loads extra
+#  overrides from src/test/resources/application-test.yml when active.
+# ============================================================================
 spring:
   application:
     name: seed
-  profiles:
-    active: local
   flyway:
     enabled: true
-    baselineOnMigrate: false
+    baseline-on-migrate: false
+    user: ${DB_USER:dev_user}
+    password: ${DB_PASSWORD:dev_password}
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:dev_db}
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:dev_db}
+    username: ${DB_USER:dev_user}
+    password: ${DB_PASSWORD:dev_password}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: ${DB_POOL_MAX_SIZE:10}
+      minimum-idle: ${DB_POOL_MIN_IDLE:2}
+      connection-timeout: ${DB_POOL_CONNECTION_TIMEOUT_MS:30000}
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+    open-in-view: false
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: ${KAFKA_CONSUMER_GROUP_ID:api-seed-consumer-group}
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+    producer:
+      group-id: ${KAFKA_PRODUCER_GROUP_ID:api-seed-producer-group}
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    topics:
+      product-events: ${KAFKA_PRODUCT_EVENTS_TOPIC:product-events}
+    template:
+      observation-enabled: true
+    listener:
+      observation-enabled: true
 
 version:
   seed: 1.1.0
@@ -27,8 +74,66 @@ documentation:
       description: Liveness check for the application
 
 management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
   endpoint:
     health:
       group:
         readiness:
           include: readinessState,diskSpace,db
+  tracing:
+    sampling:
+      probability: ${OTEL_TRACES_SAMPLER_RATIO:1.0}
+    propagation:
+      type: w3c
+  otlp:
+    metrics:
+      export:
+        url: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318}/v1/metrics
+        step: 30s
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318}/v1/traces
+          transport: http
+    logging:
+      export:
+        otlp:
+          endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318}/v1/logs
+          transport: http
+  metrics:
+    tags:
+      application: ${spring.application.name}
+      env: ${APP_ENV:local}
+
+elasticsearch:
+  host: ${ELASTICSEARCH_HOST:localhost}
+  port: ${ELASTICSEARCH_PORT:9200}
+  scheme: ${ELASTICSEARCH_SCHEME:http}
+  username: ${ELASTICSEARCH_USERNAME:admin}
+  password: ${ELASTICSEARCH_PASSWORD:admin}
+  index:
+    products: ${ELASTICSEARCH_PRODUCTS_INDEX:products}
+
+external:
+  api:
+    product:
+      base-url: ${EXTERNAL_API_BASE_URL:https://fakestoreapi.com}
+      timeout: ${EXTERNAL_API_TIMEOUT_MS:5000}
+      retry-attempts: ${EXTERNAL_API_RETRY_ATTEMPTS:3}
+
+# HTTP request/response logging via Zalando Logbook.
+# The org.zalando.logbook.Logbook logger must be at TRACE for messages to be emitted;
+# the logback-spring.xml routes them to the ${LOG_FORMAT} appender (default: console).
+logbook:
+  include:
+    - /**
+  format:
+    style: json
+
+logging:
+  level:
+    org.zalando.logbook: TRACE

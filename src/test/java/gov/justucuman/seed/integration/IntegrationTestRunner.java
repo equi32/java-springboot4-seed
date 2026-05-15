@@ -2,6 +2,7 @@ package gov.justucuman.seed.integration;
 
 import gov.justucuman.seed.SeedApplication;
 import gov.justucuman.seed.integration.components.ArgumentAwareComponent;
+import gov.justucuman.seed.integration.karate.KarateBridge;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -12,7 +13,9 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.TestInstance;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 
 import java.io.IOException;
@@ -82,6 +85,18 @@ public abstract class IntegrationTestRunner {
 			.withUsername("dev_user")
 			.withPassword("dev_password");
 
+	private static final String TEST_OPENSEARCH_INDEX = "products-test";
+
+	@SuppressWarnings("resource")
+	private final GenericContainer<?> openSearchContainer = new GenericContainer<>(
+			DockerImageName.parse("opensearchproject/opensearch:2.11.1")
+	)
+			.withEnv("discovery.type", "single-node")
+			.withEnv("plugins.security.disabled", "true")
+			.withEnv("OPENSEARCH_JAVA_OPTS", "-Xms512m -Xmx512m")
+			.withExposedPorts(9200)
+			.waitingFor(Wait.forHttp("/").forPort(9200).forStatusCode(200));
+
 	/**
 	 * Initializes the Spring Boot application context with test configuration.
 	 * <p>
@@ -105,6 +120,10 @@ public abstract class IntegrationTestRunner {
 		log.info("Starting PostgreSQL container");
 		postgresContainer.start();
 
+		// Start OpenSearch container so the search adapter can index/query during tests
+		log.info("Starting OpenSearch container");
+		openSearchContainer.start();
+
 		// Start all registered components
 		components.forEach(ArgumentAwareComponent::start);
 
@@ -126,15 +145,24 @@ public abstract class IntegrationTestRunner {
 		arguments.add("--spring.datasource.password=" + postgresContainer.getPassword());
 		arguments.add("--spring.datasource.driver-class-name=org.postgresql.Driver");
 
-		// Disable elasticsearch for integration tests (not needed for basic CRUD tests)
-		arguments.add("--elasticsearch.enabled=false");
-		// Disable kafka for integration tests (not needed for basic CRUD tests)
+		// Wire the OpenSearch adapter to the container started above
+		arguments.add("--elasticsearch.host=" + openSearchContainer.getHost());
+		arguments.add("--elasticsearch.port=" + openSearchContainer.getMappedPort(9200));
+		arguments.add("--elasticsearch.scheme=http");
+		arguments.add("--elasticsearch.username=admin");
+		arguments.add("--elasticsearch.password=admin");
+		arguments.add("--elasticsearch.index.products=" + TEST_OPENSEARCH_INDEX);
+		// Kafka stays off — IntegrationTestRunner doesn't run a broker, and the
+		// indexing flow is exercised directly from feature steps via KarateBridge.
 		arguments.add("--kafka.enabled=false");
 
 		log.info("Starting application with arguments: {}", arguments);
 
 		// Start the Spring Boot application
 		context = SpringApplication.run(SeedApplication.class, arguments.toArray(String[]::new));
+
+		// Expose Spring beans to Karate feature steps so they can index synchronously
+		KarateBridge.initialize(context, TEST_OPENSEARCH_INDEX);
 	}
 
 	/**
@@ -163,6 +191,9 @@ public abstract class IntegrationTestRunner {
 		components.forEach(ArgumentAwareComponent::stop);
 		if (postgresContainer != null && postgresContainer.isRunning()) {
 			postgresContainer.stop();
+		}
+		if (openSearchContainer != null && openSearchContainer.isRunning()) {
+			openSearchContainer.stop();
 		}
 	}
 
