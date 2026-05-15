@@ -20,7 +20,7 @@ A production-ready microservice template built with **Spring Boot 4**, **Java 25
 | Messaging | Apache Kafka (Spring Kafka 4.0) |
 | Search | OpenSearch Java client 2.19 |
 | HTTP Client | Spring WebFlux WebClient |
-| API Docs | SpringDoc OpenAPI (Swagger UI) |
+| API Docs | SpringDoc OpenAPI 3.0 (Swagger UI) |
 | Mapping | MapStruct 1.6.3, Lombok |
 | Observability | OpenTelemetry (traces + metrics + logs via OTLP), Micrometer, Logbook |
 | Testing | JUnit 5, Karate 1.5, Testcontainers 2.0 |

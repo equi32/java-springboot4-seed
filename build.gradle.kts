@@ -55,8 +55,9 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 	runtimeOnly("org.postgresql:postgresql")
 
-	// OpenAPI (Swagger UI) - Spring Boot 4 compatible version
-	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.13")
+	// OpenAPI (Swagger UI) - 3.x line targets Spring Boot 4 / Jackson 3.
+	// 2.x is pinned to Spring Boot 3 / Jackson 2 and is not compatible.
+	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3")
 
 	// MapStruct
 	implementation("org.mapstruct:mapstruct:1.6.3")
